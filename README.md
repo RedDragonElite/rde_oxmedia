@@ -1,6 +1,6 @@
 # 📺 RDE OxMedia — Next-Gen Media Streaming for FiveM
 
-[![Version](https://img.shields.io/badge/version-1.0.3--alpha-red?style=for-the-badge&logo=github)](https://github.com/RedDragonElite/rde_oxmedia/releases)
+[![Version](https://img.shields.io/badge/version-1.0.4--alpha-red?style=for-the-badge&logo=github)](https://github.com/RedDragonElite/rde_oxmedia/releases)
 [![Status](https://img.shields.io/badge/status-EARLY%20ALPHA-orange?style=for-the-badge)](https://github.com/RedDragonElite/rde_oxmedia)
 [![License](https://img.shields.io/badge/license-RDE%20Black%20Flag%20v6.66-black?style=for-the-badge)](LICENSE)
 [![FiveM](https://img.shields.io/badge/FiveM-Compatible-orange?style=for-the-badge)](https://fivem.net)
@@ -432,6 +432,12 @@ No data migration. StateBags are session-only. Done in 60 seconds.
 ---
 
 ## 📝 Changelog
+
+### v1.0.4-alpha
+- ✨ `web/index.html` — DUI page added to repo (self-hosting reference + GitHub Pages ready)
+- 🔧 `web/` — `mediaelement-and-player.min.js` + `mediaelementplayer.min.js` removed (unused, saves 171KB)
+- 🔧 `fxmanifest.lua` — `files {}` cleaned up accordingly
+- 🐛 `web/index.html` — Twitch `parent=localhost` → `window.location.hostname` (Twitch embed now works on any HTTPS host, not only localhost)
 
 ### v1.0.3-alpha — Hotfix
 - 🔴 **HOTFIX** `client.lua` — frozen image on stop: `ReleaseNamedRendertarget` decrements ref-count but GPU retains last drawn frame; fix spawns a 2-frame thread that draws black to the render target before releasing — screen now clears correctly on stop

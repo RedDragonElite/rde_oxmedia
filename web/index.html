@@ -202,8 +202,9 @@ function playTwitch(url, volume) {
   else if (channelMatch) param = 'channel=' + channelMatch[1];
   else { console.error('[RDE_OXMEDIA] Invalid Twitch URL: ' + url); return; }
 
+  const parent = window.location.hostname || 'rd-elite.com';
   const embedUrl = 'https://player.twitch.tv/?' + param +
-    '&parent=localhost&autoplay=true&muted=false';
+    '&parent=' + parent + '&autoplay=true&muted=false';
 
   $twFrame.src = embedUrl;
   $twFrame.style.display = 'block';

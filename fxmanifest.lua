@@ -5,7 +5,7 @@ lua54 'yes'
 name        'rde_oxmedia'
 author      'Red Dragon Elite | SerpentsByte'
 description 'Next-generation media streaming — StateBag sync, GlobalState prop sync, proximity audio, DUI rendering'
-version     '1.0.3'
+version     '1.0.4'
 repository  'https://github.com/RedDragonElite/rde_oxmedia'
 
 dependencies {
@@ -37,8 +37,8 @@ server_scripts {
 
 files {
     'web/index.html',
-    'web/mediaelement-and-player.min.js',
-    'web/mediaelementplayer.min.js',
+    -- MediaElement.js removed — DUI uses native YT IFrame API + HTML5 video
+    -- Self-host web/index.html anywhere over HTTPS (see Config.DuiUrl)
 }
 
 -- NOTE: No ui_page — control UI uses ox_lib context menus only.

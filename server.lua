@@ -1,5 +1,5 @@
 -- ============================================================
--- RDE OXMEDIA — SERVER  v1.0.3
+-- RDE OXMEDIA — SERVER  v1.0.4
 --
 -- All play/pause/stop/volume actions are server-authoritative.
 --
@@ -575,4 +575,4 @@ exports('getDeviceState',       getDeviceState)
 exports('getPropDeviceState',   getPropDeviceState)
 exports('hasPermission',        hasPermission)
 
-print('^2[RDE_OXMEDIA] Server v1.0.3 initialized | rde_props GlobalState sync ready^7')
+print('^2[RDE_OXMEDIA] Server v1.0.4 initialized | rde_props GlobalState sync ready^7')

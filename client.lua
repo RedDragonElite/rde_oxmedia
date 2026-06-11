@@ -1,5 +1,5 @@
 -- ============================================================
--- RDE OXMEDIA — CLIENT  v1.0.3
+-- RDE OXMEDIA — CLIENT  v1.0.4
 --
 -- ARCHITECTURE — three entity classes:
 --
@@ -822,4 +822,4 @@ exports('startDevice',      startDevice)
 exports('stopDevice',       stopDevice)
 exports('getActiveDevices', function() return activeDevices end)
 
-print('^2[RDE_OXMEDIA] Client v1.0.3 initialized — locale: ' .. Config.Locale .. ' | rde_props sync enabled^7')
+print('^2[RDE_OXMEDIA] Client v1.0.4 initialized — locale: ' .. Config.Locale .. ' | rde_props sync enabled^7')
