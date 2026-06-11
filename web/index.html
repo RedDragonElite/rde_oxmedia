@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDE OxMedia DUI — GitHub Pages Version</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, sans-serif;
+    }
+
+    #container {
+      position: relative;
+      width: 100%; height: 100%;
+    }
+
+    .player {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      border: none;
+      display: none;
+    }
+
+    video#direct-video {
+      width: 100%; height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    #loading {
+      display: none;
+      position: absolute;
+      inset: 0;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      background: #000;
+      color: #fff;
+      font-size: 15px;
+      z-index: 200;
+    }
+    #loading.show { display: flex; }
+
+    .spinner {
+      width: 44px; height: 44px;
+      border: 4px solid rgba(255,255,255,0.15);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div id="container">
+  <div id="loading" class="show">
+    <div class="spinner"></div>
+    <span>Waiting for media…</span>
+  </div>
+
+  <!-- YouTube: enablejsapi=1 JETZT OK weil wir nicht auf nui:// sind! -->
+  <iframe id="yt-frame"   class="player"
+          allow="autoplay; encrypted-media"
+          allowfullscreen="true"></iframe>
+
+  <!-- Twitch embed iframe -->
+  <iframe id="tw-frame"   class="player"
+          allow="autoplay; encrypted-media"
+          allowfullscreen="true"></iframe>
+
+  <!-- Direct / HLS video -->
+  <div    id="vid-wrap"   class="player">
+    <video id="direct-video" playsinline autoplay crossorigin="anonymous"></video>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// FIX: Diese Version läuft auf HTTPS (GitHub Pages)
+// Daher kann YouTube's IFrame API und postMessage nun funktionieren!
+// ─────────────────────────────────────────────────────────────
+
+const $loading = document.getElementById('loading');
+const $ytFrame = document.getElementById('yt-frame');
+const $twFrame = document.getElementById('tw-frame');
+const $vidWrap = document.getElementById('vid-wrap');
+const $vid     = document.getElementById('direct-video');
+
+let currentType = null;
+let ytVolume    = 100;
+
+function hideAll() {
+  $ytFrame.style.display = 'none';
+  $twFrame.style.display = 'none';
+  $vidWrap.style.display = 'none';
+  $loading.classList.remove('show');
+}
+
+function showLoading() { $loading.classList.add('show'); }
+function hideLoading() { $loading.classList.remove('show'); }
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, Number(v) || 0)); }
+
+// ─────────────────────────────────────────────────────────────
+// YOUTUBE — MIT enablejsapi=1 (funktioniert jetzt!)
+// ─────────────────────────────────────────────────────────────
+
+function extractYouTubeId(url) {
+  const pats = [
+    /[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /\/embed\/([a-zA-Z0-9_-]{11})/,
+    /\/live\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const p of pats) { const m = url.match(p); if (m) return m[1]; }
+  return null;
+}
+
+function playYouTube(url, startTime, volume) {
+  const videoId = extractYouTubeId(url);
+  if (!videoId) {
+    console.error('[RDE_OXMEDIA] Cannot extract YouTube ID: ' + url);
+    return;
+  }
+
+  currentType = 'youtube';
+  ytVolume = clamp(volume, 0, 100);
+
+  hideAll();
+  showLoading();
+
+  const t = Math.floor(startTime || 0);
+
+  // FIXED: enablejsapi=1 + HTTPS = Works!
+  const embedUrl = [
+    'https://www.youtube.com/embed/', videoId,
+    '?autoplay=1',
+    '&mute=0',              // ← Not muted anymore!
+    '&controls=1',          // ← Show controls
+    '&disablekb=1',
+    '&fs=0',
+    '&modestbranding=1',
+    '&playsinline=1',
+    '&rel=0',
+    '&iv_load_policy=3',
+    '&enablejsapi=1',       // ← NOW WORKS on HTTPS!
+    t > 0 ? '&start=' + t : '',
+  ].join('');
+
+  $ytFrame.src = embedUrl;
+  $ytFrame.style.display = 'block';
+
+  $ytFrame.onload = function () {
+    hideLoading();
+    setTimeout(function () {
+      if (ytVolume < 100) ytSetVolume(ytVolume);
+    }, 800);
+  };
+}
+
+function ytPostMessage(cmd, args) {
+  try {
+    $ytFrame.contentWindow.postMessage(
+      JSON.stringify({ event: 'command', func: cmd, args: args || [] }),
+      '*'
+    );
+  } catch(e) { console.error('[RDE] postMessage failed:', e); }
+}
+
+function ytSetVolume(vol) {
+  vol = clamp(vol, 0, 100);
+  ytVolume = vol;
+  if (vol === 0) {
+    ytPostMessage('mute');
+  } else {
+    ytPostMessage('unMute');
+    ytPostMessage('setVolume', [vol]);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// TWITCH
+// ─────────────────────────────────────────────────────────────
+
+function playTwitch(url, volume) {
+  currentType = 'twitch';
+  hideAll();
+  showLoading();
+
+  const videoMatch   = url.match(/twitch\.tv\/videos\/(\d+)/);
+  const channelMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
+
+  let param = '';
+  if      (videoMatch)   param = 'video='   + videoMatch[1];
+  else if (channelMatch) param = 'channel=' + channelMatch[1];
+  else { console.error('[RDE_OXMEDIA] Invalid Twitch URL: ' + url); return; }
+
+  const embedUrl = 'https://player.twitch.tv/?' + param +
+    '&parent=localhost&autoplay=true&muted=false';
+
+  $twFrame.src = embedUrl;
+  $twFrame.style.display = 'block';
+  $twFrame.onload = hideLoading;
+}
+
+// ─────────────────────────────────────────────────────────────
+// DIRECT / HLS
+// ─────────────────────────────────────────────────────────────
+
+function playDirect(url, startTime, volume) {
+  currentType = 'direct';
+  hideAll();
+  showLoading();
+
+  $vid.src = '';
+  const vol = clamp(volume, 0, 100) / 100;
+
+  $vid.src = url;
+  $vid.volume = vol;
+  
+  $vid.addEventListener('loadeddata', function once() {
+    $vid.removeEventListener('loadeddata', once);
+    $vid.currentTime = startTime || 0;
+    $vid.play().catch(() => {});
+    $vidWrap.style.display = 'block';
+    hideLoading();
+  }, { once: true });
+
+  $vid.addEventListener('error', () => {
+    console.error('[RDE_OXMEDIA] Video error: ' + url);
+    hideLoading();
+  });
+
+  $vid.load();
+}
+
+// ─────────────────────────────────────────────────────────────
+// TRANSPORT
+// ─────────────────────────────────────────────────────────────
+
+function pauseMedia() {
+  if (currentType === 'youtube') ytPostMessage('pauseVideo');
+  else if (currentType === 'direct') $vid.pause();
+}
+
+function resumeMedia() {
+  if (currentType === 'youtube') ytPostMessage('playVideo');
+  else if (currentType === 'direct') $vid.play().catch(()=>{});
+}
+
+function stopMedia() {
+  if (currentType === 'youtube') {
+    try { ytPostMessage('stopVideo'); } catch(e) {}
+    $ytFrame.src = 'about:blank';
+  } else if (currentType === 'direct') {
+    $vid.pause(); $vid.src = '';
+  } else if (currentType === 'twitch') {
+    $twFrame.src = 'about:blank';
+  }
+  hideAll();
+  currentType = null;
+}
+
+function setVolume(vol) {
+  vol = clamp(vol, 0, 100);
+  if (currentType === 'youtube') {
+    ytSetVolume(vol);
+  } else if (currentType === 'direct') {
+    $vid.volume = vol / 100;
+    $vid.muted = (vol === 0);
+  }
+}
+
+function seekTo(time) {
+  if (currentType === 'youtube') {
+    ytPostMessage('seekTo', [time, true]);
+  } else if (currentType === 'direct') {
+    $vid.currentTime = time;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// MESSAGE HANDLER (FiveM SendDuiMessage)
+// ─────────────────────────────────────────────────────────────
+
+window.addEventListener('message', function (ev) {
+  // Ignore YouTube's own postMessage
+  if (ev.source === $ytFrame.contentWindow) return;
+
+  let msg;
+  try { msg = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data; }
+  catch (e) { return; }
+  if (!msg || !msg.action) return;
+
+  switch (msg.action) {
+    case 'loadUrl': {
+      const url       = String(msg.url  || '');
+      const type      = String(msg.type || 'direct');
+      const startTime = Number(msg.time)   || 0;
+      const volume    = msg.volume != null ? Number(msg.volume) : 100;
+      const paused    = Boolean(msg.paused);
+      if (!url) break;
+      if      (type === 'youtube') { 
+        playYouTube(url, startTime, volume); 
+        if (paused) setTimeout(pauseMedia, 1500); 
+      }
+      else if (type === 'twitch')  { 
+        playTwitch(url, volume); 
+      }
+      else { 
+        playDirect(url, startTime, volume);
+        if (paused) setTimeout(pauseMedia, 1500); 
+      }
+      break;
+    }
+    case 'pause':     pauseMedia();                         break;
+    case 'resume':    resumeMedia();                        break;
+    case 'stop':      stopMedia();                          break;
+    case 'setVolume': setVolume(Number(msg.volume) ?? 100); break;
+    case 'seek':      seekTo(Number(msg.time) || 0);        break;
+  }
+});
+
+console.log('[RDE_OXMEDIA] DUI ready (GitHub Pages HTTPS)');
+</script>
+</body>
+</html>
