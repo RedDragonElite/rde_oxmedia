@@ -433,12 +433,14 @@ No data migration. StateBags are session-only. Done in 60 seconds.
 
 ## 📝 Changelog
 
+### v1.0.2-alpha — Hotfix
+- 🔴 **HOTFIX** `fxmanifest.lua` — `locales/*.lua` re-added to `shared_scripts`; `lib.load()` uses `LoadResourceFile` which requires files registered in the manifest — caused `file 'locales.en' not found` crash on resource start
+
 ### v1.0.1-alpha — Bug Fix Release
 - 🔴 **BUG-01** `client.lua` — time reporter: `dev.data.startTime` → `dev.startTime` (wrong table level — reporter never fired since release)
 - 🟡 **BUG-02** `client.lua` — `ReleaseNamedRendertarget()` missing in `stopByKey` (VRAM leak on stop/start cycles)
 - 🔴 **BUG-03** `server.lua` — `/oxmedia_clear` used `TriggerEvent` → `source=0`, permission check bypassed, `notify` was a no-op; logic inlined directly into command handler
 - 🟡 **BUG-04** `server.lua` — `volume=0` rejected by `not volume` check (`0` is truthy in Lua, use `volume == nil`); players couldn't mute devices
-- 🟢 **BUG-05** `fxmanifest.lua` — `locales/*.lua` removed from `shared_scripts` (return-table files, `lib.load()` handles them; shared_scripts discarded the return value)
 - 📄 **LICENSE** — Black Flag Source License v6.66 added as standalone file
 
 ### v1.0.0-alpha — Initial Public Release

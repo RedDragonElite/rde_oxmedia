@@ -5,7 +5,7 @@ lua54 'yes'
 name        'rde_oxmedia'
 author      'Red Dragon Elite | SerpentsByte'
 description 'Next-generation media streaming — StateBag sync, GlobalState prop sync, proximity audio, DUI rendering'
-version     '1.0.1'
+version     '1.0.2'
 repository  'https://github.com/RedDragonElite/rde_oxmedia'
 
 dependencies {
@@ -24,10 +24,7 @@ shared_script '@ox_lib/init.lua'
 
 shared_scripts {
     'config.lua',
-    -- locales/*.lua intentionally NOT in shared_scripts:
-    -- these files only contain `return {...}` and are loaded on-demand
-    -- via lib.load() in client.lua. Running them as shared_scripts
-    -- would execute them globally but discard the return value.
+    'locales/*.lua',   -- required: lib.load() uses LoadResourceFile which needs files registered
 }
 
 client_scripts {
