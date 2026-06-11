@@ -332,9 +332,7 @@ RegisterNetEvent('rde_oxmedia:server:setVolume', function(netId, volume)
     local source = source
     netId  = tonumber(netId)
     volume = tonumber(volume)
-    -- BUG-04 FIX: `not volume` rejects volume=0 because 0 is falsy in Lua.
-    -- Players could never mute a device. Fixed: explicit nil check.
-    if not netId or volume == nil then return end
+    if not netId or volume == nil then return end  -- BUG-04 fix: `not 0` is false in Lua, explicit nil check
 
     local current = getDeviceState(netId)
     if not current then return end
@@ -452,8 +450,7 @@ end)
 RegisterNetEvent('rde_oxmedia:server:propSetVolume', function(propId, volume)
     local source = source
     volume = tonumber(volume)
-    -- BUG-04 FIX: same as setVolume — volume=0 is falsy, explicit nil check required.
-    if not propId or propId == '' or volume == nil then return end
+    if not propId or propId == '' or volume == nil then return end  -- BUG-04 fix: explicit nil check
 
     local current = getPropDeviceState(propId)
     if not current then return end
@@ -522,10 +519,8 @@ lib.addCommand('oxmedia_clear', {
     help       = 'Clear all active media devices (admin only)',
     restricted = 'group.admin',
 }, function(source)
-    -- BUG-03 FIX: was TriggerEvent('rde_oxmedia:server:clearAll') which fires the
-    -- RegisterNetEvent handler with source = 0 (server), breaking hasPermission()
-    -- (it allows source=0 unconditionally) and making notify() a no-op for the admin.
-    -- ox_lib restricted commands already enforce group.admin, so call logic directly.
+    -- BUG-03 fix: inlined logic — TriggerEvent gave source=0, permission check
+    -- bypassed and notify(0,...) was a no-op. Command is already restricted to admins.
     local count = 0
     for netId in pairs(activeDevices) do
         setDeviceState(netId, nil)

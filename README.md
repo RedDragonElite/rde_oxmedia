@@ -12,7 +12,7 @@ Stream YouTube videos and direct media on any TV, monitor, laptop, cinema screen
 
 Built on ox_core · ox_lib · ox_target · rde_props
 
-*Built by [Red Dragon Elite](https://rd-elite.com) | SerpentsByte · v1.0.1-alpha*
+*Built by [Red Dragon Elite](https://rd-elite.com) | SerpentsByte · v1.0.0-alpha*
 
 > **⚠️ EARLY ALPHA — ACTIVE DEVELOPMENT**
 >
@@ -433,14 +433,13 @@ No data migration. StateBags are session-only. Done in 60 seconds.
 
 ## 📝 Changelog
 
-### v1.0.1-alpha — Bug Fix Patch
-
-- 🐛 **FIX BUG-01** `client.lua` — Time reporter silently never fired: `dev.data.startTime` was checked but the field lives at `dev.startTime` (wrong table level). VOD position sync was completely broken for the originating player. Fixed: `dev.startTime` direct access.
-- 🐛 **FIX BUG-02** `client.lua` — Named render targets leaked VRAM on repeated stop/start cycles: `stopByKey()` cleaned up `AddReplaceTexture` but never called `ReleaseNamedRendertarget()`. Fixed: release check added to `stopByKey` for all `renderTarget` devices.
-- 🐛 **FIX BUG-03** `server.lua` — `/oxmedia_clear` command used `TriggerEvent()` to call its own `RegisterNetEvent` handler, making `source = 0` (server) inside the handler. `hasPermission()` accepts `source=0` unconditionally, bypassing the real admin check; `notify()` was a no-op; the real `source` (the admin who typed the command) never got a response. Fixed: command now calls the clear logic directly, respecting `source` correctly.
-- 🐛 **FIX BUG-04** `server.lua` — `setVolume` and `propSetVolume`: guard was `not volume` which is `true` for `volume = 0` in Lua (0 is falsy). Players could never mute a device. Fixed: explicit `volume == nil` check on both handlers.
-- 🐛 **FIX BUG-05** `fxmanifest.lua` — `locales/*.lua` listed in `shared_scripts` — these files use `return {}` syntax (lib.load pattern). When executed as shared scripts their return value is discarded silently. Locale data is loaded via `lib.load()` in `client.lua` — the `shared_scripts` entry was dead weight. Removed.
-- 📄 **Added `LICENSE` file** — Black Flag Source License v6.66 was present in README but missing as a standalone file in the repo root.
+### v1.0.1-alpha — Bug Fix Release
+- 🔴 **BUG-01** `client.lua` — time reporter: `dev.data.startTime` → `dev.startTime` (wrong table level — reporter never fired since release)
+- 🟡 **BUG-02** `client.lua` — `ReleaseNamedRendertarget()` missing in `stopByKey` (VRAM leak on stop/start cycles)
+- 🔴 **BUG-03** `server.lua` — `/oxmedia_clear` used `TriggerEvent` → `source=0`, permission check bypassed, `notify` was a no-op; logic inlined directly into command handler
+- 🟡 **BUG-04** `server.lua` — `volume=0` rejected by `not volume` check (`0` is truthy in Lua, use `volume == nil`); players couldn't mute devices
+- 🟢 **BUG-05** `fxmanifest.lua` — `locales/*.lua` removed from `shared_scripts` (return-table files, `lib.load()` handles them; shared_scripts discarded the return value)
+- 📄 **LICENSE** — Black Flag Source License v6.66 added as standalone file
 
 ### v1.0.0-alpha — Initial Public Release
 - ✨ Full StateBag sync for networked props (Entity StateBag `oxmedia`)
