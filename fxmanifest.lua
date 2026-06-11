@@ -24,11 +24,10 @@ shared_script '@ox_lib/init.lua'
 
 shared_scripts {
     'config.lua',
-    -- NOTE: locales are NOT loaded here as shared_scripts.
-    -- They are return-table files loaded on demand via lib.load() in client.lua.
-    -- BUG-05 FIX: having locales/*.lua as shared_scripts caused them to execute
-    -- as scripts — their return value was discarded and the tables were lost.
 }
+
+-- locales use lib.load() — must be in files{} so ox_lib's require can resolve them.
+-- Do NOT put them in shared_scripts (return-table files, the table gets discarded).
 
 client_scripts {
     'client.lua',
@@ -39,6 +38,7 @@ server_scripts {
 }
 
 files {
+    'locales/*.lua',
     'web/index.html',
     'web/mediaelement-and-player.min.js',
     'web/mediaelementplayer.min.js',
