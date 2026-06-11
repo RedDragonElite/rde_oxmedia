@@ -1,6 +1,6 @@
 # 📺 RDE OxMedia — Next-Gen Media Streaming for FiveM
 
-[![Version](https://img.shields.io/badge/version-1.0.1--alpha-red?style=for-the-badge&logo=github)](https://github.com/RedDragonElite/rde_oxmedia/releases)
+[![Version](https://img.shields.io/badge/version-1.0.3--alpha-red?style=for-the-badge&logo=github)](https://github.com/RedDragonElite/rde_oxmedia/releases)
 [![Status](https://img.shields.io/badge/status-EARLY%20ALPHA-orange?style=for-the-badge)](https://github.com/RedDragonElite/rde_oxmedia)
 [![License](https://img.shields.io/badge/license-RDE%20Black%20Flag%20v6.66-black?style=for-the-badge)](LICENSE)
 [![FiveM](https://img.shields.io/badge/FiveM-Compatible-orange?style=for-the-badge)](https://fivem.net)
