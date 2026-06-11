@@ -1,5 +1,5 @@
 -- ============================================================
--- RDE OXMEDIA — CLIENT  v1.0.2
+-- RDE OXMEDIA — CLIENT  v1.0.3
 --
 -- ARCHITECTURE — three entity classes:
 --
@@ -228,11 +228,29 @@ stopByKey = function(key)
     if dev.config and dev.config.screenTxd then
         RemoveReplaceTexture(dev.config.screenTxd, dev.config.screenTex)
     end
-    -- BUG-02 fix: release named render target to prevent VRAM leak on stop/start cycles
     if dev.config and dev.config.renderTarget then
-        if IsNamedRendertargetRegistered(dev.config.renderTarget) then
-            ReleaseNamedRendertarget(dev.config.renderTarget)
-        end
+        local rt = dev.config.renderTarget
+        -- FIX: ReleaseNamedRendertarget only decrements the ref-count but the GPU
+        -- retains the last drawn frame. Spawn a 2-frame thread that draws black
+        -- to the RT before releasing, so the frozen image disappears on stop.
+        CreateThread(function()
+            for _ = 1, 2 do
+                Wait(0)
+                if IsNamedRendertargetRegistered(rt) then
+                    local rid = GetNamedRendertargetRenderId(rt)
+                    if rid and rid ~= 0 then
+                        SetTextRenderId(rid)
+                        Set_2dLayer(4)
+                        SetScriptGfxDrawBehindPausemenu(true)
+                        DrawRect(0.5, 0.5, 1.0, 1.0, 0, 0, 0, 255)
+                        SetTextRenderId(GetDefaultScriptRendertargetRenderId())
+                    end
+                end
+            end
+            if IsNamedRendertargetRegistered(rt) then
+                ReleaseNamedRendertarget(rt)
+            end
+        end)
     end
     activeDevices[key] = nil
     Log(('stopped [%s]'):format(key))
@@ -804,4 +822,4 @@ exports('startDevice',      startDevice)
 exports('stopDevice',       stopDevice)
 exports('getActiveDevices', function() return activeDevices end)
 
-print('^2[RDE_OXMEDIA] Client v1.0.2 initialized — locale: ' .. Config.Locale .. ' | rde_props sync enabled^7')
+print('^2[RDE_OXMEDIA] Client v1.0.3 initialized — locale: ' .. Config.Locale .. ' | rde_props sync enabled^7')

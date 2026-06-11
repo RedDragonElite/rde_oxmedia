@@ -433,6 +433,9 @@ No data migration. StateBags are session-only. Done in 60 seconds.
 
 ## 📝 Changelog
 
+### v1.0.3-alpha — Hotfix
+- 🔴 **HOTFIX** `client.lua` — frozen image on stop: `ReleaseNamedRendertarget` decrements ref-count but GPU retains last drawn frame; fix spawns a 2-frame thread that draws black to the render target before releasing — screen now clears correctly on stop
+
 ### v1.0.2-alpha — Hotfix
 - 🔴 **HOTFIX** `fxmanifest.lua` — `locales/*.lua` re-added to `shared_scripts`; `lib.load()` uses `LoadResourceFile` which requires files registered in the manifest — caused `file 'locales.en' not found` crash on resource start
 

@@ -5,7 +5,7 @@ lua54 'yes'
 name        'rde_oxmedia'
 author      'Red Dragon Elite | SerpentsByte'
 description 'Next-generation media streaming — StateBag sync, GlobalState prop sync, proximity audio, DUI rendering'
-version     '1.0.2'
+version     '1.0.3'
 repository  'https://github.com/RedDragonElite/rde_oxmedia'
 
 dependencies {
