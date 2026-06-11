@@ -1,5 +1,5 @@
 -- ============================================================
--- RDE OXMEDIA — CLIENT  v1.0.0
+-- RDE OXMEDIA — CLIENT  v1.0.1
 --
 -- ARCHITECTURE — three entity classes:
 --
@@ -225,8 +225,19 @@ stopByKey = function(key)
         duiSend(dev.dui, { action = 'stop' })
         destroyDui(dev.dui)
     end
-    if dev.config and dev.config.screenTxd then
-        RemoveReplaceTexture(dev.config.screenTxd, dev.config.screenTex)
+    if dev.config then
+        if dev.config.screenTxd then
+            -- AddReplaceTexture fallback path: unregister the texture override
+            RemoveReplaceTexture(dev.config.screenTxd, dev.config.screenTex)
+        end
+        if dev.config.renderTarget then
+            -- BUG-02 FIX: Named render targets were never released on stop, causing
+            -- VRAM leaks after repeated stop/start cycles. Release only when registered.
+            local rt = dev.config.renderTarget
+            if IsNamedRendertargetRegistered(rt) then
+                ReleaseNamedRendertarget(rt)
+            end
+        end
     end
     activeDevices[key] = nil
     Log(('stopped [%s]'):format(key))
@@ -767,13 +778,16 @@ CreateThread(function()  -- audio attenuation: every 100 ms
 end)
 
 -- Time reporter for networked props (net: keys only)
+-- BUG-01 FIX: dev.data.startTime was checked but the field lives on dev (not dev.data).
+-- dev.startTime is set in startDevice() as GetGameTimer(). dev.data.startTime never exists,
+-- so the reporter silently never fired. Fixed: check dev.startTime directly.
 CreateThread(function()
     while true do
         Wait(5000)
         for key, dev in pairs(activeDevices) do
             if dev.isNetworked and dev.netId and dev.data and dev.dui then
                 if dev.data.startedBy == GetPlayerServerId(PlayerId()) then
-                    if dev.data.startTime then
+                    if dev.startTime then  -- FIX: was dev.data.startTime (wrong table level)
                         local elapsed = (GetGameTimer() - dev.startTime) / 1000
                         local ct = (dev.data.currentTime or 0) + elapsed
                         TriggerServerEvent('rde_oxmedia:server:reportTime', dev.netId, ct)
@@ -798,4 +812,4 @@ exports('startDevice',      startDevice)
 exports('stopDevice',       stopDevice)
 exports('getActiveDevices', function() return activeDevices end)
 
-print('^2[RDE_OXMEDIA] Client v1.0.0 initialized — locale: ' .. Config.Locale .. ' | rde_props sync enabled^7')
+print('^2[RDE_OXMEDIA] Client v1.0.1 initialized — locale: ' .. Config.Locale .. ' | rde_props sync enabled^7')

@@ -1,5 +1,5 @@
 -- ============================================================
--- RDE OXMEDIA — SERVER  v1.0.0
+-- RDE OXMEDIA — SERVER  v1.0.1
 --
 -- All play/pause/stop/volume actions are server-authoritative.
 --
@@ -332,7 +332,9 @@ RegisterNetEvent('rde_oxmedia:server:setVolume', function(netId, volume)
     local source = source
     netId  = tonumber(netId)
     volume = tonumber(volume)
-    if not netId or not volume then return end
+    -- BUG-04 FIX: `not volume` rejects volume=0 because 0 is falsy in Lua.
+    -- Players could never mute a device. Fixed: explicit nil check.
+    if not netId or volume == nil then return end
 
     local current = getDeviceState(netId)
     if not current then return end
@@ -450,7 +452,8 @@ end)
 RegisterNetEvent('rde_oxmedia:server:propSetVolume', function(propId, volume)
     local source = source
     volume = tonumber(volume)
-    if not propId or propId == '' or not volume then return end
+    -- BUG-04 FIX: same as setVolume — volume=0 is falsy, explicit nil check required.
+    if not propId or propId == '' or volume == nil then return end
 
     local current = getPropDeviceState(propId)
     if not current then return end
@@ -519,7 +522,22 @@ lib.addCommand('oxmedia_clear', {
     help       = 'Clear all active media devices (admin only)',
     restricted = 'group.admin',
 }, function(source)
-    TriggerEvent('rde_oxmedia:server:clearAll')
+    -- BUG-03 FIX: was TriggerEvent('rde_oxmedia:server:clearAll') which fires the
+    -- RegisterNetEvent handler with source = 0 (server), breaking hasPermission()
+    -- (it allows source=0 unconditionally) and making notify() a no-op for the admin.
+    -- ox_lib restricted commands already enforce group.admin, so call logic directly.
+    local count = 0
+    for netId in pairs(activeDevices) do
+        setDeviceState(netId, nil)
+        count = count + 1
+    end
+    for propId in pairs(activePropDevices) do
+        setPropDeviceState(propId, nil)
+        count = count + 1
+    end
+    notify(source, 'success', ('Cleared %d active device(s)'):format(count))
+    logAction(source, 'onClearAll', nil, { count = count })
+    Log(('clearAll | count=%d | src=%d'):format(count, source))
 end)
 
 -- ============================================================
@@ -562,4 +580,4 @@ exports('getDeviceState',       getDeviceState)
 exports('getPropDeviceState',   getPropDeviceState)
 exports('hasPermission',        hasPermission)
 
-print('^2[RDE_OXMEDIA] Server v1.0.0 initialized | rde_props GlobalState sync ready^7')
+print('^2[RDE_OXMEDIA] Server v1.0.1 initialized | rde_props GlobalState sync ready^7')
